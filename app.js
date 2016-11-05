@@ -1,84 +1,45 @@
-/*
-var express = require('express')
-var app = express()
-
-app.set('port', (process.env.PORT || 5000))
-app.use(express.static(__dirname + '/public'))
-
-app.get('/', function(request, response) {
-  response.send('Hello World123!')
-})
-
-app.listen(app.get('port'), function() {
-  console.log("Node app is running at localhost:" + app.get('port'))
-})
-*/
 var express = require('express');
-var path = require('path');
-var bodyPaser = require('body-parser');
-var nodemailer = require('nodemailer');
-
+var bodyParser = require('body-parser');
+var request = require('request');
 var app = express();
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended : false}));
 app.set('port', (process.env.PORT || 5000));
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
-app.use(bodyPaser.json());
-app.use(bodyPaser.urlencoded({extended: false}));
-app.use(express.static(path.join(__dirname,'public')));
-
-app.get('/', function(req,res){
-	//console.log('Hello World');
-	//res.send('Hello World Saravanan aha How are you?');
-	res.render('index', {title: 'Welcome', subtitle: 'How are you today Saravanan?'});
-});
-app.get('/about', function(req,res){
-	console.log(res.render('about'));
-});
-app.get('/contact', function(req,res){
-	res.render('contact');
+app.get('/',function(req,res) {
+  // Sending our HTML file to browser.
+  res.sendFile(__dirname + '/index.html');
 });
 
-var jade = require('jade'),
-    locals = {name: "Saravanan"},
-    html   = jade.renderFile('views/emailTemplate.jade', locals);
-	
-//console.log(html);
-
-app.post('/contact/send', function(req,res){
-	 // Not the movie transporter!
-	var smtpTransport = require('nodemailer-smtp-transport');
-    var transporter = nodemailer.createTransport(smtpTransport({
-        service: 'Gmail',
-        auth: {
-            user: 'abini.tester123@gmail.com', // Your email id
-            pass: 'abini@tester!@#' // Your password           
-        },
-		tls: { rejectUnauthorized: false }
-    }));
-	// To send mails the two settings we have made
-		//1. tls property added to the transporter constructor
-		//2. The gmail account setting has been changed [risky] -Access for less secure apps : Turn on.
-		//    https://www.google.com/settings/security/lesssecureapps
-	var mailOptions = {
-	    from: 'abini.tester123@gmail.com', // sender address
-	    to: req.body.email, // list of receivers
-	    subject: 'Email Example through nodejs', // Subject line
-	    //text: 'text' //, // plaintext body
-	    html: html // You can choose to send an HTML body instead
-	};
-
-	transporter.sendMail(mailOptions, function(error, info){
-	    if(error){
-	        console.log(error);
-	        res.json({yo: 'error'});
-	    }else{
-	        console.log('Message sent: ' + info.response);
-	        res.json({yo: info.response});			
-	    };
-	});
+app.post('/submit',function(req,res){
+  // g-recaptcha-response is the key that browser will generate upon form submit.
+  // if its blank or null means user has not selected the captcha, so return the error.
+  if(req.body['g-recaptcha-response'] === undefined || req.body['g-recaptcha-response'] === '' || req.body['g-recaptcha-response'] === null) {
+    return res.json({"responseCode" : 1,"responseDesc" : "Please select captcha"});
+  }
+  // Put your secret key here.
+  var secretKey = "6LdBLwsUAAAAALKWFWjmO5AKxfJHHkrZrk3cBzRc";
+  // req.connection.remoteAddress will provide IP address of connected user.
+  var verificationUrl = "https://www.google.com/recaptcha/api/siteverify?secret=" + secretKey + "&response=" + req.body['g-recaptcha-response'] + "&remoteip=" + req.connection.remoteAddress;
+  // Hitting GET request to the URL, Google will respond with success or error scenario.
+  request(verificationUrl,function(error,response,body) {
+    body = JSON.parse(body);
+    // Success will be true or false depending upon captcha validation.
+    if(body.success !== undefined && !body.success) {
+      return res.json({"responseCode" : 1,"responseDesc" : "Failed captcha verification"});
+    }
+    res.json({"responseCode" : 0,"responseDesc" : "Sucess"});
+  });
 });
+
+// This will handle 404 requests.
+app.use("*",function(req,res) {
+  res.status(404).send("404");
+})
+
+// lifting the app on port 3000.
+//app.listen(3000);
 
 app.listen(app.get('port'), function() {
   console.log("Node app is running at localhost:" + app.get('port'))
 });
-
