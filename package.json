@@ -1,0 +1,21 @@
+{
+  "name": "Google-ReCaptcha",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+	"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"repository": {
+	"type": "git",
+	"url": "git+https://github.com/codeforgeek/google-racapcha-node.git"
+	},
+	"author": "Saravanan Subbiah",
+	"license": "MIT",
+	"dependencies":
+	{
+	"body-parser": "^1.15.2",
+	"express": "^4.14.0",
+	"request": "^2.78.0"
+	}
+}
